@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Xkiro AI</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 2rem; }
+    #chat-container { width: 100%; max-width: 600px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 80vh; }
+    #messages { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; }
+    .message { padding: 0.75rem 1rem; border-radius: 18px; max-width: 80%; line-height: 1.4; }
+    .user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .ai { background: #e9ecef; color: #212529; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .ai.thinking { color: #6c757d; font-style: italic; }
+    #input-area { display: flex; padding: 1rem; border-top: 1px solid #dee2e6; gap: 0.5rem; }
+    #input { flex: 1; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 20px; outline: none; font-size: 1rem; }
+    #send-btn { padding: 0.75rem 1.25rem; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; }
+    #send-btn:disabled { background: #6c757d; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="messages"></div>
+    <div id="input-area">
+      <input type="text" id="input" placeholder="Type a message..." autocomplete="off">
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const messagesDiv = document.getElementById('messages');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send-btn');
+    let conversation = [{ role: 'system', content: 'You are a helpful assistant.' }];
+    let isWaiting = false;
+
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.textContent = text;
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function send() {
+      const text = input.value.trim();
+      if (!text || isWaiting) return;
+
+      isWaiting = true;
+      sendBtn.disabled = true;
+      input.value = '';
+      addMessage('user', text);
+      conversation.push({ role: 'user', content: text });
+
+      const thinkingDiv = document.createElement('div');
+      thinkingDiv.className = 'message ai thinking';
+      thinkingDiv.textContent = 'Thinking...';
+      messagesDiv.appendChild(thinkingDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: conversation })
+        });
+        const data = await res.json();
+        
+        thinkingDiv.remove();
+
+        if (data.error) {
+          addMessage('ai', `Error: ${data.error}`);
+        } else {
+          const reply = data.choices[0].message.content;
+          addMessage('ai', reply);
+          conversation.push({ role: 'assistant', content: reply });
+        }
+      } catch (err) {
+        thinkingDiv.remove();
+        addMessage('ai', `Network error: ${err.message}`);
+      }
+
+      isWaiting = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+  </script>
+</body>
+</html>
