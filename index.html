@@ -5,21 +5,174 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Xkiro AI</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 2rem; }
-    #chat-container { width: 100%; max-width: 600px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 80vh; }
-    #messages { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; }
-    .message { padding: 0.75rem 1rem; border-radius: 18px; max-width: 80%; line-height: 1.4; }
-    .user { background: #007bff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .ai { background: #e9ecef; color: #212529; align-self: flex-start; border-bottom-left-radius: 4px; }
-    .ai.thinking { color: #6c757d; font-style: italic; }
-    #input-area { display: flex; padding: 1rem; border-top: 1px solid #dee2e6; gap: 0.5rem; }
-    #input { flex: 1; padding: 0.75rem; border: 1px solid #ced4da; border-radius: 20px; outline: none; font-size: 1rem; }
-    #send-btn { padding: 0.75rem 1.25rem; background: #007bff; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; }
-    #send-btn:disabled { background: #6c757d; cursor: not-allowed; }
+    :root {
+      --bg: #f4f4f9;
+      --container-bg: #ffffff;
+      --text: #212529;
+      --text-muted: #6c757d;
+      --user-bg: #007bff;
+      --user-text: #ffffff;
+      --ai-bg: #e9ecef;
+      --ai-text: #212529;
+      --border: #dee2e6;
+      --input-bg: #ffffff;
+      --input-border: #ced4da;
+      --input-text: #212529;
+      --button-bg: #007bff;
+      --button-text: #ffffff;
+      --button-disabled: #6c757d;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+
+    html[data-theme="dark"] {
+      --bg: #0f1115;
+      --container-bg: #1a1d23;
+      --text: #e9ecef;
+      --text-muted: #9aa0a6;
+      --user-bg: #3b82f6;
+      --user-text: #ffffff;
+      --ai-bg: #262a31;
+      --ai-text: #e9ecef;
+      --border: #2d3138;
+      --input-bg: #262a31;
+      --input-border: #3a3f47;
+      --input-text: #e9ecef;
+      --button-bg: #3b82f6;
+      --button-text: #ffffff;
+      --button-disabled: #4a5058;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+      margin: 0;
+      min-height: 100vh;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    #chat-container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--container-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+      position: relative;
+      transition: background 0.2s ease;
+    }
+
+    #theme-toggle {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      z-index: 10;
+    }
+
+    #theme-toggle:hover {
+      background: var(--ai-bg);
+    }
+
+    #messages {
+      flex: 1;
+      padding: 1rem;
+      padding-top: 3rem; /* leave space for toggle button */
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 18px;
+      max-width: 80%;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: var(--user-bg);
+      color: var(--user-text);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .ai {
+      background: var(--ai-bg);
+      color: var(--ai-text);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .ai.thinking {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    #input-area {
+      display: flex;
+      padding: 1rem;
+      border-top: 1px solid var(--border);
+      gap: 0.5rem;
+    }
+
+    #input {
+      flex: 1;
+      padding: 0.75rem;
+      border: 1px solid var(--input-border);
+      border-radius: 20px;
+      outline: none;
+      font-size: 1rem;
+      background: var(--input-bg);
+      color: var(--input-text);
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    #input:focus {
+      border-color: var(--button-bg);
+    }
+
+    #send-btn {
+      padding: 0.75rem 1.25rem;
+      background: var(--button-bg);
+      color: var(--button-text);
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s ease;
+    }
+
+    #send-btn:disabled {
+      background: var(--button-disabled);
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
   <div id="chat-container">
+    <button id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">🌙</button>
     <div id="messages"></div>
     <div id="input-area">
       <input type="text" id="input" placeholder="Type a message..." autocomplete="off">
@@ -28,6 +181,29 @@
   </div>
 
   <script>
+    // --- Theme toggle logic ---
+    const themeToggle = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+
+    function applyTheme(theme) {
+      root.setAttribute('data-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    // On load: use saved preference, else fall back to system preference
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+    applyTheme(initialTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const current = root.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem('theme', next);
+    });
+
+    // --- Chat logic ---
     const messagesDiv = document.getElementById('messages');
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('send-btn');
@@ -65,7 +241,7 @@
           body: JSON.stringify({ messages: conversation })
         });
         const data = await res.json();
-        
+
         thinkingDiv.remove();
 
         if (data.error) {
