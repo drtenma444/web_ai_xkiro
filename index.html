@@ -6,176 +6,106 @@
   <title>Lessbot</title>
   <style>
     :root {
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --header: #ffffff;
-      --text: #0f172a;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --ai-bubble: #f1f3f7;
-      --ai-text: #0f172a;
-      --user-bubble: linear-gradient(135deg, #2563eb, #3b82f6);
-      --user-text: #ffffff;
-      --input-bg: #f8fafc;
-      --input-border: #e2e8f0;
-      --input-text: #0f172a;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      --avatar-bg: #e0e7ff;
-      --avatar-text: #3730a3;
+      --bg: #ffffff;
+      --text: #1f2937;
+      --muted: #9ca3af;
+      --border: #eaeaea;
+      --user-bubble: #f2f2f2;
+      --user-text: #1f2937;
+      --ai-text: #1f2937;
+      --input-bg: #f5f5f5;
+      --input-text: #1f2937;
+      --accent: #1f2937;
+      --send-bg: #1f2937;
+      --send-text: #ffffff;
+      --send-disabled: #d1d5db;
     }
 
     html[data-theme="dark"] {
-      --bg: #0a0c10;
-      --card: #12151b;
-      --header: #12151b;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --border: #232833;
-      --ai-bubble: #1c2129;
-      --ai-text: #e5e7eb;
-      --user-bubble: linear-gradient(135deg, #3b82f6, #6366f1);
-      --user-text: #ffffff;
-      --input-bg: #1a1e26;
-      --input-border: #2a303b;
-      --input-text: #e5e7eb;
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      --avatar-bg: #1e293b;
-      --avatar-text: #93c5fd;
+      --bg: #191919;
+      --text: #ececec;
+      --muted: #7a7a7a;
+      --border: #2a2a2a;
+      --user-bubble: #2a2a2a;
+      --user-text: #ececec;
+      --ai-text: #ececec;
+      --input-bg: #2a2a2a;
+      --input-text: #ececec;
+      --accent: #ececec;
+      --send-bg: #ececec;
+      --send-text: #191919;
+      --send-disabled: #404040;
     }
 
     * { box-sizing: border-box; }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
+    html, body { margin: 0; padding: 0; height: 100%; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.25s ease, color 0.25s ease;
+      font-size: 15px;
+      line-height: 1.55;
+      transition: background 0.2s ease, color 0.2s ease;
     }
 
-    #chat-container {
-      width: 100%;
-      max-width: 780px;
-      height: 100vh;
-      background: var(--card);
+    #app {
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      transition: background 0.25s ease;
+      height: 100vh;
+      max-width: 720px;
+      margin: 0 auto;
       position: relative;
-    }
-
-    @media (min-width: 720px) {
-      body { padding: 2rem; }
-      #chat-container {
-        height: 88vh;
-        border-radius: 20px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-      }
     }
 
     /* ---------- Header ---------- */
     header {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.9rem 1.1rem;
+      justify-content: space-between;
+      padding: 0.85rem 1.25rem;
       border-bottom: 1px solid var(--border);
-      background: var(--header);
-      transition: background 0.25s ease, border-color 0.25s ease;
+      background: var(--bg);
       flex-shrink: 0;
+      transition: border-color 0.2s ease;
     }
 
-    .bot-avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #2563eb, #6366f1);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1rem;
-      flex-shrink: 0;
-      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-    }
-
-    .bot-info {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.2;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .bot-name {
-      font-weight: 600;
+    .brand {
       font-size: 0.95rem;
-    }
-
-    .bot-status {
-      font-size: 0.75rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     #theme-toggle {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
       background: transparent;
-      border: 1px solid var(--border);
+      border: none;
       color: var(--text);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-      flex-shrink: 0;
+      transition: background 0.15s ease;
+      padding: 0;
     }
 
     #theme-toggle:hover {
-      background: var(--ai-bubble);
-      transform: translateY(-1px);
+      background: var(--user-bubble);
     }
 
-    #theme-toggle:active { transform: translateY(0); }
-
     #theme-toggle svg {
-      width: 18px;
-      height: 18px;
+      width: 17px;
+      height: 17px;
       stroke: currentColor;
       fill: none;
-      stroke-width: 2;
+      stroke-width: 1.75;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
 
-    /* Show only the right icon per theme */
     #icon-sun, #icon-moon { display: none; }
     html[data-theme="light"] #icon-moon { display: block; }
     html[data-theme="dark"]  #icon-sun  { display: block; }
@@ -184,136 +114,64 @@
     #messages {
       flex: 1;
       overflow-y: auto;
-      padding: 1.25rem 1.1rem 0.5rem;
+      padding: 1.5rem 1.25rem 0.5rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.15rem;
       scroll-behavior: smooth;
     }
 
-    #messages::-webkit-scrollbar { width: 8px; }
+    #messages::-webkit-scrollbar { width: 6px; }
     #messages::-webkit-scrollbar-thumb {
       background: var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
     }
 
-    /* ---------- Welcome screen ---------- */
-    #welcome {
-      position: absolute;
-      inset: 60px 0 0 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 2rem;
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 0.3s ease;
+    .msg {
+      animation: fade 0.2s ease both;
+      max-width: 100%;
     }
 
-    #welcome.hidden { opacity: 0; }
-
-    .welcome-avatar {
-      width: 64px;
-      height: 64px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #2563eb, #6366f1);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+    @keyframes fade {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
-    .welcome-title {
-      font-size: 1.35rem;
-      font-weight: 700;
-      margin: 0 0 0.4rem;
-    }
-
-    .welcome-sub {
-      color: var(--muted);
-      font-size: 0.9rem;
-      max-width: 320px;
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    /* ---------- Message rows ---------- */
-    .row {
-      display: flex;
-      gap: 0.6rem;
-      align-items: flex-end;
-      animation: fadeUp 0.25s ease both;
-    }
-
-    .row.user { flex-direction: row-reverse; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .msg-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.78rem;
-      flex-shrink: 0;
-      background: var(--avatar-bg);
-      color: var(--avatar-text);
-    }
-
-    .row.user .msg-avatar {
-      background: linear-gradient(135deg, #2563eb, #6366f1);
-      color: #fff;
-    }
-
-    .bubble {
-      padding: 0.7rem 0.95rem;
-      border-radius: 16px;
-      font-size: 0.94rem;
-      line-height: 1.5;
-      max-width: 76%;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
-
-    .row.ai .bubble {
-      background: var(--ai-bubble);
+    /* AI: plain text, no bubble */
+    .msg.ai {
       color: var(--ai-text);
-      border-bottom-left-radius: 6px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 15px;
     }
 
-    .row.user .bubble {
+    /* User: subtle bubble, right-aligned */
+    .msg.user {
+      align-self: flex-end;
       background: var(--user-bubble);
       color: var(--user-text);
+      padding: 0.55rem 0.9rem;
+      border-radius: 18px;
       border-bottom-right-radius: 6px;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
+      max-width: 78%;
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
-    /* ---------- Typing dots ---------- */
+    /* Typing dots */
     .typing {
       display: inline-flex;
       gap: 4px;
       align-items: center;
-      padding: 0.15rem 0.1rem;
+      padding: 0.25rem 0;
     }
 
     .typing span {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: var(--muted);
-      opacity: 0.4;
+      opacity: 0.5;
       animation: bounce 1.2s infinite ease-in-out;
     }
 
@@ -321,33 +179,26 @@
     .typing span:nth-child(3) { animation-delay: 0.3s; }
 
     @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
       30%           { transform: translateY(-4px); opacity: 1; }
     }
 
-    /* ---------- Input area ---------- */
+    /* ---------- Input ---------- */
     #input-area {
-      padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
-      border-top: 1px solid var(--border);
-      background: var(--card);
+      padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+      background: var(--bg);
       flex-shrink: 0;
-      transition: background 0.25s ease, border-color 0.25s ease;
+      transition: background 0.2s ease;
     }
 
     .input-wrap {
       display: flex;
-      gap: 0.5rem;
       align-items: flex-end;
+      gap: 0.5rem;
       background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 20px;
-      padding: 0.35rem 0.35rem 0.35rem 0.9rem;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .input-wrap:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      border-radius: 24px;
+      padding: 0.3rem 0.3rem 0.3rem 1rem;
+      transition: background 0.15s ease;
     }
 
     #input {
@@ -357,72 +208,52 @@
       background: transparent;
       color: var(--input-text);
       font-family: inherit;
-      font-size: 0.95rem;
-      line-height: 1.4;
+      font-size: 15px;
+      line-height: 1.5;
       resize: none;
-      max-height: 140px;
-      padding: 0.5rem 0;
+      max-height: 160px;
+      padding: 0.55rem 0;
       scrollbar-width: none;
     }
 
     #input::-webkit-scrollbar { display: none; }
-
     #input::placeholder { color: var(--muted); }
 
     #send-btn {
-      width: 38px;
-      height: 38px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      background: var(--accent);
-      color: #fff;
+      background: var(--send-bg);
+      color: var(--send-text);
       border: none;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: background 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+      transition: opacity 0.15s ease, transform 0.1s ease;
     }
 
-    #send-btn:hover:not(:disabled) {
-      background: var(--accent-hover);
-      transform: scale(1.05);
-    }
+    #send-btn:hover:not(:disabled) { opacity: 0.85; }
+    #send-btn:active:not(:disabled) { transform: scale(0.95); }
 
     #send-btn:disabled {
-      opacity: 0.45;
+      background: var(--send-disabled);
       cursor: not-allowed;
     }
 
     #send-btn svg {
-      width: 17px;
-      height: 17px;
+      width: 16px;
+      height: 16px;
       fill: currentColor;
-    }
-
-    .hint {
-      font-size: 0.7rem;
-      color: var(--muted);
-      text-align: center;
-      margin-top: 0.55rem;
-      user-select: none;
-    }
-
-    @media (max-width: 480px) {
-      .hint { display: none; }
-      .bubble { max-width: 82%; }
     }
   </style>
 </head>
 <body>
-  <div id="chat-container">
+  <div id="app">
     <header>
-      <div class="bot-avatar">L</div>
-      <div class="bot-info">
-        <div class="bot-name">Lessbot</div>
-        <div class="bot-status"><span class="status-dot"></span>Online</div>
-      </div>
-      <button id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+      <div class="brand">Lessbot</div>
+      <button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
         <svg id="icon-sun" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="4"></circle>
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
@@ -435,22 +266,15 @@
 
     <div id="messages"></div>
 
-    <div id="welcome">
-      <div class="welcome-avatar">L</div>
-      <h2 class="welcome-title">Hi, I'm Lessbot 👋</h2>
-      <p class="welcome-sub">Ask me anything — I'll answer honestly and try to be a genuinely helpful friend.</p>
-    </div>
-
     <div id="input-area">
       <div class="input-wrap">
-        <textarea id="input" rows="1" placeholder="Message Lessbot..." autocomplete="off"></textarea>
+        <textarea id="input" rows="1" placeholder="Message" autocomplete="off"></textarea>
         <button id="send-btn" aria-label="Send">
           <svg viewBox="0 0 24 24">
             <path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.12L3.5 11l11.5 1-11.5 1-1.49 6.28a1 1 0 0 0 1.39 1.12z"/>
           </svg>
         </button>
       </div>
-      <div class="hint">Enter to send · Shift + Enter for new line</div>
     </div>
   </div>
 
@@ -459,34 +283,27 @@
     const themeToggle = document.getElementById('theme-toggle');
     const root = document.documentElement;
 
-    function applyTheme(theme) {
-      root.setAttribute('data-theme', theme);
-    }
-
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(savedTheme || (systemPrefersDark ? 'dark' : 'light'));
+    root.setAttribute('data-theme', savedTheme || (systemPrefersDark ? 'dark' : 'light'));
 
     themeToggle.addEventListener('click', () => {
-      const current = root.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      applyTheme(next);
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
       localStorage.setItem('theme', next);
     });
 
     // ---------- Chat ----------
     const messagesDiv = document.getElementById('messages');
-    const welcome = document.getElementById('welcome');
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('send-btn');
 
     let conversation = [];
     let isWaiting = false;
 
-    // Auto-grow the textarea
     function autoGrow() {
       input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+      input.style.height = Math.min(input.scrollHeight, 160) + 'px';
     }
     input.addEventListener('input', autoGrow);
 
@@ -494,35 +311,22 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    function makeRow(role, html) {
-      const row = document.createElement('div');
-      row.className = `row ${role}`;
-
-      const avatar = document.createElement('div');
-      avatar.className = 'msg-avatar';
-      avatar.textContent = role === 'user' ? 'You' : 'L';
-
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      if (html) bubble.innerHTML = html;
-      else bubble.textContent = '';
-
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      messagesDiv.appendChild(row);
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.textContent = text;
+      messagesDiv.appendChild(div);
       scrollToBottom();
-      return bubble;
-    }
-
-    function addTextMessage(role, text) {
-      const bubble = makeRow(role, '');
-      bubble.textContent = text;
+      return div;
     }
 
     function addTyping() {
-      const bubble = makeRow('ai', '');
-      bubble.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
-      return bubble.closest('.row');
+      const div = document.createElement('div');
+      div.className = 'msg ai';
+      div.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+      messagesDiv.appendChild(div);
+      scrollToBottom();
+      return div;
     }
 
     async function send() {
@@ -534,12 +338,10 @@
       input.value = '';
       autoGrow();
 
-      welcome.classList.add('hidden');
-
-      addTextMessage('user', text);
+      addMessage('user', text);
       conversation.push({ role: 'user', content: text });
 
-      const typingRow = addTyping();
+      const typingEl = addTyping();
 
       try {
         const res = await fetch('/api/chat', {
@@ -549,18 +351,18 @@
         });
         const data = await res.json();
 
-        typingRow.remove();
+        typingEl.remove();
 
         if (data.error) {
-          addTextMessage('ai', `⚠️ Error: ${data.error}`);
+          addMessage('ai', `Error: ${data.error}`);
         } else {
           const reply = data.choices[0].message.content;
-          addTextMessage('ai', reply);
+          addMessage('ai', reply);
           conversation.push({ role: 'assistant', content: reply });
         }
       } catch (err) {
-        typingRow.remove();
-        addTextMessage('ai', `⚠️ Network error: ${err.message}`);
+        typingEl.remove();
+        addMessage('ai', `Network error: ${err.message}`);
       }
 
       isWaiting = false;
@@ -577,7 +379,6 @@
       }
     });
 
-    // Focus on load
     window.addEventListener('load', () => input.focus());
   </script>
 </body>
