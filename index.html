@@ -353,11 +353,11 @@
       border: none;
       outline: none;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      place-items: center;
       flex-shrink: 0;
       padding: 0;
+      margin-bottom: 1px; /* lift slightly so it looks centered with the textarea's baseline */
       transition: opacity 0.15s ease, transform 0.1s ease;
     }
     #send-btn:hover:not(:disabled) { opacity: 0.85; }
@@ -375,9 +375,8 @@
       stroke-width: 2.5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      /* optical centering: nudge arrow slightly since its visual weight
-         is on the shaft, not the tip */
-      margin-top: -1px;
+      /* optical centering: pull up-left by 1px each */
+      transform: translate(-1px, -1px);
     }
 
     /* ---------- Mobile ---------- */
