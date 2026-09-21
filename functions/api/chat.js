@@ -40,13 +40,15 @@ EMOJI RULES:
 
 Keep answers clear and useful. Don't pad them with filler. If a short answer works, keep it short.`;
 
-    // Strip any system messages the frontend sent
     const filtered = messages.filter(m => m.role !== 'system');
+
+    // --- Inject current time ---
+    const now = new Date();
+    const currentTimeContext = `\n\n--- CURRENT TIME ---\nThe current UTC time is: ${now.toUTCString()}\nThe current time in Bangladesh (BST, UTC+6) is: ${new Date(now.getTime() + 6 * 60 * 60 * 1000).toUTCString().replace('GMT', 'BST')}\nUse this information when the user asks about the current time or date.\n--- END CURRENT TIME ---`;
 
     // --- Pre-search if enabled ---
     let searchContext = '';
     if (webSearchEnabled) {
-      // Use the user's latest message as the search query
       const lastUser = [...filtered].reverse().find(m => m.role === 'user');
 
       if (!env.TAVILY_API_KEY) {
@@ -93,7 +95,7 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
     }
 
     const fullMessages = [
-      { role: 'system', content: systemPrompt + searchContext },
+      { role: 'system', content: systemPrompt + currentTimeContext + searchContext },
       ...filtered
     ];
 
