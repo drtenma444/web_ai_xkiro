@@ -1,36 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Lessbot</title>
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-  <link rel="stylesheet" id="hljs-dark" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #1f2937;
-      --muted: #9ca3af;
-      --border: #eaeaea;
-      --hover: rgba(0, 0, 0, 0.05);
-      --user-bubble: #f2f2f2;
-      --user-text: #1f2937;
-      --input-bg: #f4f4f5;
-      --input-border: #e4e4e7;
-      --input-text: #1f2937;
-      --send-bg: #1f2937;
-      --send-text: #ffffff;
-      --send-disabled: #d1d5db;
-      --code-bg: #f6f8fa;
-      --code-header-bg: #f0f2f4;
-      --inline-code-bg: #eef0f2;
-      --link: #2563eb;
-      --quote-border: #d0d7de;
-    }
-
-    html[data-theme="dark"] {
       --bg: #191919;
       --text: #ececec;
       --muted: #7a7a7a;
@@ -60,7 +38,7 @@
       color: var(--text);
       font-size: 15px;
       line-height: 1.55;
-      transition: background 0.2s ease, color 0.2s ease;
+      overflow: hidden;
     }
 
     #app {
@@ -75,11 +53,8 @@
     header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 1.5rem;
-      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
       flex-shrink: 0;
-      transition: border-color 0.2s ease;
     }
 
     .brand {
@@ -88,41 +63,18 @@
       letter-spacing: -0.01em;
     }
 
-    #theme-toggle {
-      width: 34px; height: 34px;
-      border-radius: 8px;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s ease;
-      padding: 0;
-    }
-    #theme-toggle:hover { background: var(--hover); }
-
-    #theme-toggle svg {
-      width: 17px; height: 17px;
-      stroke: currentColor; fill: none;
-      stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
-    }
-
-    #icon-sun, #icon-moon { display: none; }
-    html[data-theme="light"] #icon-moon { display: block; }
-    html[data-theme="dark"]  #icon-sun  { display: block; }
-
-    /* ---------- Body (welcome + messages + input) ---------- */
+    /* ---------- Body ---------- */
     #body {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
     }
 
     #welcome {
       display: none;
       text-align: center;
-      margin-bottom: 1.75rem;
     }
     #welcome h1 {
       font-size: 1.75rem;
@@ -139,6 +91,7 @@
       flex-direction: column;
       gap: 1.5rem;
       scroll-behavior: smooth;
+      min-height: 0;
     }
     #messages::-webkit-scrollbar { width: 6px; }
     #messages::-webkit-scrollbar-thumb {
@@ -148,23 +101,27 @@
 
     #input-area {
       flex-shrink: 0;
-      padding: 0 1.5rem 1.5rem;
-    }
-
-    /* Initial state: centered */
-    #app.state-initial #body {
-      justify-content: center;
-      align-items: center;
-      padding: 0 1.5rem 3rem;
-    }
-    #app.state-initial #welcome { display: block; }
-    #app.state-initial #input-area {
       width: 100%;
-      max-width: 720px;
-      padding: 0;
     }
 
-    /* Chatting state: normal chat */
+    /* Initial state: greeting + input higher up, like DeepSeek */
+    #app.state-initial #body {
+      justify-content: flex-start;
+      padding-top: clamp(80px, 20vh, 220px);
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+      padding-bottom: 2rem;
+    }
+    #app.state-initial #welcome {
+      display: block;
+      margin-bottom: 1.5rem;
+    }
+    #app.state-initial #input-area {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Chatting state */
     #app.state-chatting #messages { display: flex; }
     #app.state-chatting #input-area {
       border-top: 1px solid var(--border);
@@ -187,6 +144,7 @@
     .msg-content {
       max-width: 100%;
       word-wrap: break-word;
+      min-width: 0;
     }
 
     .msg.user .msg-content {
@@ -250,7 +208,7 @@
       30%           { transform: translateY(-4px); opacity: 1; }
     }
 
-    /* ---------- Markdown styling (AI messages) ---------- */
+    /* ---------- Markdown ---------- */
     .msg.ai .msg-content > *:first-child { margin-top: 0; }
     .msg.ai .msg-content > *:last-child  { margin-bottom: 0; }
 
@@ -362,13 +320,15 @@
       background: var(--input-bg);
       border: 1px solid var(--input-border);
       border-radius: 24px;
-      padding: 0.3rem 0.3rem 0.3rem 1rem;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      padding: 0.4rem 0.4rem 0.4rem 1.1rem;
+      min-height: 52px;
+      transition: border-color 0.15s ease;
     }
-    .input-wrap:focus-within { border-color: var(--muted); }
+    .input-wrap:focus-within { border-color: #4a4a4a; }
 
     #input {
-      flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
       border: none;
       outline: none;
       background: transparent;
@@ -385,29 +345,67 @@
     #input::placeholder { color: var(--muted); }
 
     #send-btn {
-      width: 34px; height: 34px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: var(--send-bg);
       color: var(--send-text);
       border: none;
+      outline: none;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
+      padding: 0;
       transition: opacity 0.15s ease, transform 0.1s ease;
     }
     #send-btn:hover:not(:disabled) { opacity: 0.85; }
-    #send-btn:active:not(:disabled) { transform: scale(0.95); }
-    #send-btn:disabled { background: var(--send-disabled); cursor: not-allowed; }
-    #send-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    #send-btn:active:not(:disabled) { transform: scale(0.94); }
+    #send-btn:disabled {
+      background: var(--send-disabled);
+      cursor: not-allowed;
+      color: var(--muted);
+    }
+    #send-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      /* optical centering: nudge arrow slightly since its visual weight
+         is on the shaft, not the tip */
+      margin-top: -1px;
+    }
 
-    /* ---------- Responsive ---------- */
+    /* ---------- Mobile ---------- */
     @media (max-width: 640px) {
-      header { padding: 0.75rem 1rem; }
-      #messages { padding: 1.25rem 1rem 0.75rem; gap: 1.25rem; }
-      #input-area { padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom)); }
-      #app.state-initial #body { padding: 0 1rem 2rem; }
-      #welcome h1 { font-size: 1.5rem; }
+      header { padding: 0.85rem 1rem; }
+
+      #app.state-initial #body {
+        padding-top: clamp(60px, 16vh, 140px);
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 1.5rem;
+      }
+      #welcome h1 { font-size: 1.4rem; }
+
+      #app.state-chatting #input-area {
+        padding: 0.75rem 0.85rem calc(0.75rem + env(safe-area-inset-bottom));
+      }
+      #messages {
+        padding: 1rem 0.85rem 0.75rem;
+        gap: 1.25rem;
+      }
       .msg.user .msg-content { max-width: 85%; }
+
+      .input-wrap {
+        padding: 0.35rem 0.35rem 0.35rem 0.9rem;
+        min-height: 48px;
+      }
+      #send-btn { width: 32px; height: 32px; }
     }
   </style>
 </head>
@@ -415,15 +413,6 @@
   <div id="app" class="state-initial">
     <header>
       <div class="brand">Lessbot</div>
-      <button id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
-        <svg id="icon-sun" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-        </svg>
-        <svg id="icon-moon" viewBox="0 0 24 24">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
-      </button>
     </header>
 
     <div id="body">
@@ -438,7 +427,7 @@
           <textarea id="input" rows="1" placeholder="Message Lessbot" autocomplete="off"></textarea>
           <button id="send-btn" aria-label="Send">
             <svg viewBox="0 0 24 24">
-              <path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.39 1.12L3.5 11l11.5 1-11.5 1-1.49 6.28a1 1 0 0 0 1.39 1.12z"/>
+              <path d="M12 19V5M5 12l7-7 7 7"/>
             </svg>
           </button>
         </div>
@@ -451,18 +440,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
   <script>
-    // ---------- Copy icons ----------
+    // ---------- Icons ----------
     const COPY_SVG = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
     const CHECK_SVG = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
-    // ---------- Markdown setup ----------
+    // ---------- Markdown ----------
     const escapeHtml = (s) => String(s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     const renderer = new marked.Renderer();
 
-    // Code blocks: header with language + pre/code with syntax highlighting
     renderer.code = (code, infostring) => {
       const info = (infostring || '').trim();
       const lang = (info.split(/\s+/)[0] || 'text').toLowerCase();
@@ -487,7 +475,6 @@
       </div>`;
     };
 
-    // Links open in new tab
     renderer.link = (href, title, text) => {
       const t = title ? ` title="${escapeHtml(title)}"` : '';
       return `<a href="${href}"${t} target="_blank" rel="noopener noreferrer">${text}</a>`;
@@ -499,26 +486,6 @@
       const raw = marked.parse(text);
       return DOMPurify.sanitize(raw, { ADD_ATTR: ['target'] });
     }
-
-    // ---------- Theme ----------
-    const themeToggle = document.getElementById('theme-toggle');
-    const root = document.documentElement;
-    const hljsDark = document.getElementById('hljs-dark');
-
-    function setTheme(theme) {
-      root.setAttribute('data-theme', theme);
-      if (hljsDark) hljsDark.disabled = theme !== 'dark';
-    }
-
-    const savedTheme = localStorage.getItem('theme');
-    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(savedTheme || (systemDark ? 'dark' : 'light'));
-
-    themeToggle.addEventListener('click', () => {
-      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      setTheme(next);
-      localStorage.setItem('theme', next);
-    });
 
     // ---------- Chat ----------
     const app = document.getElementById('app');
@@ -591,9 +558,7 @@
       wrap.appendChild(actions);
 
       messagesDiv.appendChild(wrap);
-
       if (role === 'ai') enhanceCodeBlocks(wrap);
-
       scrollToBottom();
       return wrap;
     }
@@ -619,7 +584,6 @@
       input.value = '';
       input.style.height = 'auto';
 
-      // Switch layout on first message
       if (app.classList.contains('state-initial')) {
         app.classList.remove('state-initial');
         app.classList.add('state-chatting');
