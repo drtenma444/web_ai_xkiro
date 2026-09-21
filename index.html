@@ -338,7 +338,7 @@
       line-height: 1.5;
       resize: none;
       max-height: 180px;
-      padding: 0.55rem 0;
+      padding: 0.55rem 0 0.75rem; /* less top padding, more bottom */
       scrollbar-width: none;
     }
     #input::-webkit-scrollbar { display: none; }
@@ -357,7 +357,8 @@
       place-items: center;
       flex-shrink: 0;
       padding: 0;
-      margin-bottom: 1px; /* lift slightly so it looks centered with the textarea's baseline */
+      margin-bottom: 5px; /* lift slightly so it looks centered with the textarea's baseline */
+      margin-right: 3px;
       transition: opacity 0.15s ease, transform 0.1s ease;
     }
     #send-btn:hover:not(:disabled) { opacity: 0.85; }
