@@ -3,9 +3,8 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
-    const { messages } = await request.json();
+    const { messages, webSearchEnabled } = await request.json();
 
-    // Get custom instructions from Cloudflare env, or use the default below.
     const systemPrompt = env.AI_INSTRUCTIONS || `You are Lessbot, a helpful, honest, and friendly AI assistant created by Nameless.
 
 IDENTITY RULES:
@@ -41,14 +40,30 @@ EMOJI RULES:
 
 Keep answers clear and useful. Don't pad them with filler. If a short answer works, keep it short.`;
 
-    // Strip any system messages the frontend might have sent, then prepend ours.
     const filtered = messages.filter(m => m.role !== 'system');
+
+    // If web search is enabled, we add a tool to the request
+    const tools = webSearchEnabled ? [{
+      type: "function",
+      function: {
+        name: "web_search",
+        description: "Search the web for current information. Use this when the user asks about recent events, live data, or facts you are not sure about.",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "The search query" }
+          },
+          required: ["query"]
+        }
+      }
+    }] : undefined;
+
     const fullMessages = [
       { role: 'system', content: systemPrompt },
       ...filtered
     ];
 
-    const response = await fetch('https://api.xkiro.com/v1/chat/completions', {
+    let response = await fetch('https://api.xkiro.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,19 +71,68 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
       },
       body: JSON.stringify({
         model: 'qwen/qwen3.6-27b:free',
-        messages: fullMessages
+        messages: fullMessages,
+        tools: tools,
+        tool_choice: webSearchEnabled ? "auto" : undefined
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return new Response(
-        JSON.stringify({ error: `Xkiro API error: ${response.status} ${errorText}` }),
-        { status: response.status, headers: { 'Content-Type': 'application/json' } }
-      );
+    let data = await response.json();
+
+    // Check if the AI decided to use the web_search tool
+    if (data.choices && data.choices[0].message.tool_calls) {
+      const toolCall = data.choices[0].message.tool_calls[0];
+      
+      if (toolCall.function.name === "web_search") {
+        const searchQuery = JSON.parse(toolCall.function.arguments).query;
+        
+        // Call the Tavily Search API
+        const searchResponse = await fetch('https://api.tavily.com/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.TAVILY_API_KEY}`
+          },
+          body: JSON.stringify({
+            query: searchQuery,
+            search_depth: "basic",
+            max_results: 5
+          })
+        });
+        
+        const searchData = await searchResponse.json();
+        const searchResults = searchData.results.map(r => `- ${r.title}: ${r.content}`).join('\n');
+
+        // Add the tool call and its result to the conversation history
+        const toolMessage = {
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: searchResults || "No results found."
+        };
+
+        const followUpMessages = [
+          ...fullMessages,
+          data.choices[0].message,
+          toolMessage
+        ];
+
+        // Ask the AI for the final answer, now that it has search results
+        response = await fetch('https://api.xkiro.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${env.XKIRO_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'qwen/qwen3.6-27b:free',
+            messages: followUpMessages
+          })
+        });
+        data = await response.json();
+      }
     }
 
-    const data = await response.json();
+    // Send the final response back to the frontend
     return new Response(JSON.stringify(data), {
       headers: { 'Content-Type': 'application/json' }
     });
