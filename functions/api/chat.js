@@ -42,7 +42,7 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
 
     const filtered = messages.filter(m => m.role !== 'system');
 
-    // --- Inject current time ---
+    // --- Inject current time (always) ---
     const now = new Date();
     const currentTimeContext = `\n\n--- CURRENT TIME ---\nThe current UTC time is: ${now.toUTCString()}\nThe current time in Bangladesh (BST, UTC+6) is: ${new Date(now.getTime() + 6 * 60 * 60 * 1000).toUTCString().replace('GMT', 'BST')}\nUse this information when the user asks about the current time or date.\n--- END CURRENT TIME ---`;
 
@@ -83,13 +83,12 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
               searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search was performed but returned no results. Answer from your own knowledge, and if you're unsure, say so.)\n--- END SEARCH RESULTS ---`;
             }
           } else {
-            const errText = await searchRes.text();
-            console.error('Tavily error:', searchRes.status, errText);
-            searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search failed with status ${searchRes.status}. Answer from your own knowledge.)\n--- END SEARCH RESULTS ---`;
+            console.error('Tavily error:', searchRes.status);
+            searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search failed. Answer from your own knowledge.)\n--- END SEARCH RESULTS ---`;
           }
         } catch (e) {
           console.error('Tavily exception:', e.message);
-          searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search encountered an error: ${e.message}. Answer from your own knowledge.)\n--- END SEARCH RESULTS ---`;
+          searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search encountered an error. Answer from your own knowledge.)\n--- END SEARCH RESULTS ---`;
         }
       }
     }
@@ -99,7 +98,8 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
       ...filtered
     ];
 
-    const response = await fetch('https://api.xkiro.com/v1/chat/completions', {
+    // --- Call xkiro with streaming enabled ---
+    const upstream = await fetch('https://api.xkiro.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,21 +107,26 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
       },
       body: JSON.stringify({
         model: 'qwen/qwen3.6-27b:free',
-        messages: fullMessages
+        messages: fullMessages,
+        stream: true
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!upstream.ok) {
+      const errorText = await upstream.text();
       return new Response(
-        JSON.stringify({ error: `Xkiro API error: ${response.status} ${errorText}` }),
-        { status: response.status, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `Xkiro API error: ${upstream.status} ${errorText}` }),
+        { status: upstream.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      headers: { 'Content-Type': 'application/json' }
+    // Pipe the SSE stream straight through
+    return new Response(upstream.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      }
     });
 
   } catch (err) {

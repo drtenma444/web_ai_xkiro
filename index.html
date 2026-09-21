@@ -121,9 +121,9 @@
       margin: 0 auto;
     }
 
+    /* Chatting state — no border-top, matches DeepSeek */
     #app.state-chatting #messages { display: flex; }
     #app.state-chatting #input-area {
-      border-top: 1px solid var(--border);
       padding: 1rem 1.5rem calc(1rem + env(safe-area-inset-bottom));
     }
 
@@ -205,6 +205,22 @@
     @keyframes bounce {
       0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
       30%           { transform: translateY(-4px); opacity: 1; }
+    }
+
+    /* Blinking cursor while streaming */
+    .stream-cursor {
+      display: inline-block;
+      width: 7px;
+      height: 15px;
+      background: var(--text);
+      vertical-align: text-bottom;
+      margin-left: 2px;
+      animation: blink 1s step-end infinite;
+      border-radius: 1px;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
     }
 
     /* ---------- Markdown ---------- */
@@ -418,6 +434,10 @@
       stroke-linejoin: round;
       display: block;
     }
+    #send-btn .icon-stop {
+      fill: currentColor;
+      stroke: none;
+    }
 
     /* ---------- Mobile ---------- */
     @media (max-width: 640px) {
@@ -480,9 +500,12 @@
               <span>Search</span>
             </button>
             <button id="send-btn" aria-label="Send">
-              <svg viewBox="0 0 24 24">
+              <svg class="icon-send" viewBox="0 0 24 24">
                 <path d="M12 19V5"></path>
                 <path d="M6 11l6-6 6 6"></path>
+              </svg>
+              <svg class="icon-stop" viewBox="0 0 24 24" style="display:none">
+                <rect x="7" y="7" width="10" height="10" rx="1.5"></rect>
               </svg>
             </button>
           </div>
@@ -549,25 +572,40 @@
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('send-btn');
     const searchToggle = document.getElementById('search-toggle');
+    const iconSend = sendBtn.querySelector('.icon-send');
+    const iconStop = sendBtn.querySelector('.icon-stop');
 
     let conversation = [];
     let isWaiting = false;
     let webSearchEnabled = false;
+    let currentAbortController = null;
 
+    // --- Search toggle ---
     searchToggle.addEventListener('click', () => {
       webSearchEnabled = !webSearchEnabled;
       searchToggle.classList.toggle('active', webSearchEnabled);
     });
 
+    // --- Textarea auto-grow ---
     input.addEventListener('input', () => {
       input.style.height = 'auto';
       input.style.height = Math.min(input.scrollHeight, 180) + 'px';
     });
 
-    function scrollToBottom() {
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // --- Scroll ---
+    let stickToBottom = true;
+    messagesDiv.addEventListener('scroll', () => {
+      const distanceFromBottom = messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight;
+      stickToBottom = distanceFromBottom < 60;
+    });
+
+    function scrollToBottom(force = false) {
+      if (force || stickToBottom) {
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
     }
 
+    // --- Copy button ---
     function createCopyButton(getText) {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -591,6 +629,7 @@
       return btn;
     }
 
+    // --- Code block copy buttons ---
     function enhanceCodeBlocks(container) {
       container.querySelectorAll('.code-block').forEach(block => {
         const header = block.querySelector('.code-header');
@@ -602,6 +641,7 @@
       });
     }
 
+    // --- Add message ---
     function addMessage(role, text) {
       const wrap = document.createElement('div');
       wrap.className = `msg ${role}`;
@@ -622,28 +662,32 @@
 
       messagesDiv.appendChild(wrap);
       if (role === 'ai') enhanceCodeBlocks(wrap);
-      scrollToBottom();
+      scrollToBottom(true);
       return wrap;
     }
 
-    function addTyping() {
-      const wrap = document.createElement('div');
-      wrap.className = 'msg ai';
-      const content = document.createElement('div');
-      content.className = 'msg-content';
-      content.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
-      wrap.appendChild(content);
-      messagesDiv.appendChild(wrap);
-      scrollToBottom();
-      return wrap;
+    // --- Toggle button between send and stop ---
+    function setButtonMode(mode) {
+      if (mode === 'stop') {
+        iconSend.style.display = 'none';
+        iconStop.style.display = 'block';
+        sendBtn.disabled = false;
+        sendBtn.setAttribute('aria-label', 'Stop');
+      } else {
+        iconSend.style.display = 'block';
+        iconStop.style.display = 'none';
+        sendBtn.disabled = false;
+        sendBtn.setAttribute('aria-label', 'Send');
+      }
     }
 
+    // --- Send / stream ---
     async function send() {
       const text = input.value.trim();
       if (!text || isWaiting) return;
 
       isWaiting = true;
-      sendBtn.disabled = true;
+      setButtonMode('stop');
       input.value = '';
       input.style.height = 'auto';
 
@@ -655,7 +699,34 @@
       addMessage('user', text);
       conversation.push({ role: 'user', content: text });
 
-      const typingEl = addTyping();
+      // Create empty AI message bubble with typing dots
+      const wrap = document.createElement('div');
+      wrap.className = 'msg ai';
+      const contentEl = document.createElement('div');
+      contentEl.className = 'msg-content';
+      contentEl.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+      wrap.appendChild(contentEl);
+      messagesDiv.appendChild(wrap);
+      scrollToBottom(true);
+
+      const abortController = new AbortController();
+      currentAbortController = abortController;
+
+      let fullText = '';
+      let rafScheduled = false;
+
+      const scheduleRender = () => {
+        if (rafScheduled) return;
+        rafScheduled = true;
+        requestAnimationFrame(() => {
+          rafScheduled = false;
+          if (fullText) {
+            contentEl.innerHTML = renderMarkdown(fullText) + '<span class="stream-cursor"></span>';
+            enhanceCodeBlocks(wrap);
+            scrollToBottom();
+          }
+        });
+      };
 
       try {
         const res = await fetch('/api/chat', {
@@ -664,33 +735,110 @@
           body: JSON.stringify({
             messages: conversation,
             webSearchEnabled: webSearchEnabled
-          })
+          }),
+          signal: abortController.signal
         });
-        const data = await res.json();
-        typingEl.remove();
 
-        if (data.error) {
-          addMessage('ai', `⚠️ Error: ${data.error}`);
-        } else {
-          const reply = data.choices[0].message.content;
-          addMessage('ai', reply);
-          conversation.push({ role: 'assistant', content: reply });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          contentEl.textContent = `⚠️ Error: ${errData.error}`;
+          return;
         }
-      } catch (err) {
-        typingEl.remove();
-        addMessage('ai', `⚠️ Network error: ${err.message}`);
-      }
 
-      isWaiting = false;
-      sendBtn.disabled = false;
-      input.focus();
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('text/event-stream')) {
+          // Non-streaming fallback
+          const data = await res.json();
+          if (data.error) {
+            contentEl.textContent = `⚠️ Error: ${data.error}`;
+          } else {
+            const reply = data.choices[0].message.content;
+            contentEl.innerHTML = renderMarkdown(reply);
+            enhanceCodeBlocks(wrap);
+            conversation.push({ role: 'assistant', content: reply });
+          }
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const data = trimmed.slice(5).trim();
+            if (!data || data === '[DONE]') continue;
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+              if (delta) {
+                fullText += delta;
+                scheduleRender();
+              }
+            } catch (e) { /* ignore malformed chunks */ }
+          }
+        }
+
+        // Final render (remove cursor)
+        contentEl.innerHTML = renderMarkdown(fullText || '(no response)');
+        enhanceCodeBlocks(wrap);
+
+        if (fullText) {
+          conversation.push({ role: 'assistant', content: fullText });
+        }
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          // User stopped — keep partial text
+          if (fullText) {
+            contentEl.innerHTML = renderMarkdown(fullText);
+            enhanceCodeBlocks(wrap);
+            conversation.push({ role: 'assistant', content: fullText });
+          } else {
+            contentEl.textContent = '(stopped)';
+          }
+        } else {
+          contentEl.textContent = `⚠️ Network error: ${err.message}`;
+        }
+      } finally {
+        // Add copy button after generation ends
+        if (!wrap.querySelector('.msg-actions')) {
+          const actions = document.createElement('div');
+          actions.className = 'msg-actions';
+          actions.appendChild(createCopyButton(() => fullText));
+          wrap.appendChild(actions);
+        }
+
+        isWaiting = false;
+        currentAbortController = null;
+        setButtonMode('send');
+        input.focus();
+      }
     }
 
-    sendBtn.addEventListener('click', send);
+    // --- Send button click: send or stop ---
+    sendBtn.addEventListener('click', () => {
+      if (isWaiting && currentAbortController) {
+        currentAbortController.abort();
+      } else {
+        send();
+      }
+    });
+
+    // --- Enter to send, Shift+Enter for newline ---
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        send();
+        if (!isWaiting) send();
       }
     });
 
