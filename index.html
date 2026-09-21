@@ -9,24 +9,25 @@
 
   <style>
     :root {
-      --bg: #191919;
+      --bg: #151517;
       --text: #ececec;
-      --muted: #7a7a7a;
-      --border: #2a2a2a;
+      --muted: #8a8a8e;
+      --border: #2a2a2d;
       --hover: rgba(255, 255, 255, 0.06);
-      --user-bubble: #2a2a2a;
+      --user-bubble: #2c2c2e;
       --user-text: #ececec;
-      --input-bg: #2a2a2a;
-      --input-border: #2a2a2a;
+      --input-bg: #2c2c2e;
+      --input-border: #2c2c2e;
       --input-text: #ececec;
-      --send-bg: #ececec;
-      --send-text: #191919;
-      --send-disabled: #404040;
-      --code-bg: #1c1c1c;
-      --code-header-bg: #232323;
-      --inline-code-bg: #2a2a2a;
-      --link: #60a5fa;
-      --quote-border: #3a3a3a;
+      --send-bg: #4d6bfe;
+      --send-text: #ffffff;
+      --send-disabled: #3a3a3d;
+      --code-bg: #1c1c1e;
+      --code-header-bg: #232326;
+      --inline-code-bg: #2c2c2e;
+      --link: #6b8aff;
+      --quote-border: #38383c;
+      --accent: #4d6bfe;
     }
 
     * { box-sizing: border-box; }
@@ -104,10 +105,9 @@
       width: 100%;
     }
 
-    /* Initial state: greeting + input higher up, like DeepSeek */
     #app.state-initial #body {
       justify-content: flex-start;
-      padding-top: clamp(80px, 20vh, 220px);
+      padding-top: clamp(120px, 28vh, 320px);
       padding-left: 1.5rem;
       padding-right: 1.5rem;
       padding-bottom: 2rem;
@@ -121,7 +121,6 @@
       margin: 0 auto;
     }
 
-    /* Chatting state */
     #app.state-chatting #messages { display: flex; }
     #app.state-chatting #input-area {
       border-top: 1px solid var(--border);
@@ -312,22 +311,21 @@
       padding: 0;
     }
 
-    /* ---------- Input ---------- */
+    /* ---------- Input box ---------- */
     .input-wrap {
       display: flex;
-      align-items: flex-end;
-      gap: 0.5rem;
+      flex-direction: column;
+      gap: 0.9rem;
       background: var(--input-bg);
       border: 1px solid var(--input-border);
-      border-radius: 24px;
-      padding: 0.4rem 0.4rem 0.4rem 1.1rem;
-      min-height: 52px;
+      border-radius: 22px;
+      padding: 0.9rem 0.75rem 0.7rem 1.1rem;
       transition: border-color 0.15s ease;
     }
-    .input-wrap:focus-within { border-color: #4a4a4a; }
+    .input-wrap:focus-within { border-color: #3a3a3d; }
 
     #input {
-      flex: 1 1 0;
+      width: 100%;
       min-width: 0;
       border: none;
       outline: none;
@@ -338,30 +336,72 @@
       line-height: 1.5;
       resize: none;
       max-height: 180px;
-      padding: 0.55rem 0 0.75rem; /* less top padding, more bottom */
+      padding: 0.15rem 0 0.5rem;
       scrollbar-width: none;
     }
     #input::-webkit-scrollbar { display: none; }
     #input::placeholder { color: var(--muted); }
 
+    /* Bottom row: search toggle left, send button right */
+    .input-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .search-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid #4a4a4e;
+      color: #d0d0d4;
+      padding: 5px 11px;
+      border-radius: 16px;
+      font-size: 12.5px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .search-toggle:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+    .search-toggle.active {
+      background: rgba(107, 138, 255, 0.18);
+      color: #8aa3ff;
+      border-color: rgba(138, 163, 255, 0.65);
+    }
+    .search-toggle svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     #send-btn {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: var(--send-bg);
       color: var(--send-text);
       border: none;
       outline: none;
       cursor: pointer;
-      display: grid;
-      place-items: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
       padding: 0;
-      margin-bottom: 5px; /* lift slightly so it looks centered with the textarea's baseline */
-      margin-right: 3px;
-      transition: opacity 0.15s ease, transform 0.1s ease;
+      transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease;
     }
-    #send-btn:hover:not(:disabled) { opacity: 0.85; }
+    #send-btn:hover:not(:disabled) { opacity: 0.9; }
     #send-btn:active:not(:disabled) { transform: scale(0.94); }
     #send-btn:disabled {
       background: var(--send-disabled);
@@ -373,11 +413,10 @@
       height: 16px;
       stroke: currentColor;
       fill: none;
-      stroke-width: 2.5;
+      stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
-      /* optical centering: pull up-left by 1px each */
-      transform: translate(-1px, -1px);
+      display: block;
     }
 
     /* ---------- Mobile ---------- */
@@ -385,7 +424,7 @@
       header { padding: 0.85rem 1rem; }
 
       #app.state-initial #body {
-        padding-top: clamp(60px, 16vh, 140px);
+        padding-top: clamp(90px, 22vh, 180px);
         padding-left: 1rem;
         padding-right: 1rem;
         padding-bottom: 1.5rem;
@@ -402,10 +441,16 @@
       .msg.user .msg-content { max-width: 85%; }
 
       .input-wrap {
-        padding: 0.35rem 0.35rem 0.35rem 0.9rem;
-        min-height: 48px;
+        padding: 0.75rem 0.65rem 0.6rem 0.9rem;
+        border-radius: 20px;
       }
-      #send-btn { width: 32px; height: 32px; }
+      #send-btn { width: 30px; height: 30px; }
+
+      .search-toggle {
+        padding: 4px 9px;
+        font-size: 12px;
+        gap: 5px;
+      }
     }
   </style>
 </head>
@@ -425,11 +470,22 @@
       <div id="input-area">
         <div class="input-wrap">
           <textarea id="input" rows="1" placeholder="Message Lessbot" autocomplete="off"></textarea>
-          <button id="send-btn" aria-label="Send">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 19V5M5 12l7-7 7 7"/>
-            </svg>
-          </button>
+          <div class="input-actions">
+            <button type="button" id="search-toggle" class="search-toggle" aria-label="Toggle web search" title="Search the web">
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M3 12h18"></path>
+                <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"></path>
+              </svg>
+              <span>Search</span>
+            </button>
+            <button id="send-btn" aria-label="Send">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 19V5"></path>
+                <path d="M6 11l6-6 6 6"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -492,9 +548,16 @@
     const messagesDiv = document.getElementById('messages');
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('send-btn');
+    const searchToggle = document.getElementById('search-toggle');
 
     let conversation = [];
     let isWaiting = false;
+    let webSearchEnabled = false;
+
+    searchToggle.addEventListener('click', () => {
+      webSearchEnabled = !webSearchEnabled;
+      searchToggle.classList.toggle('active', webSearchEnabled);
+    });
 
     input.addEventListener('input', () => {
       input.style.height = 'auto';
@@ -598,7 +661,10 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: conversation })
+          body: JSON.stringify({
+            messages: conversation,
+            webSearchEnabled: webSearchEnabled
+          })
         });
         const data = await res.json();
         typingEl.remove();
