@@ -40,30 +40,64 @@ EMOJI RULES:
 
 Keep answers clear and useful. Don't pad them with filler. If a short answer works, keep it short.`;
 
+    // Strip any system messages the frontend sent
     const filtered = messages.filter(m => m.role !== 'system');
 
-    // If web search is enabled, we add a tool to the request
-    const tools = webSearchEnabled ? [{
-      type: "function",
-      function: {
-        name: "web_search",
-        description: "Search the web for current information. Use this when the user asks about recent events, live data, or facts you are not sure about.",
-        parameters: {
-          type: "object",
-          properties: {
-            query: { type: "string", description: "The search query" }
-          },
-          required: ["query"]
+    // --- Pre-search if enabled ---
+    let searchContext = '';
+    if (webSearchEnabled) {
+      // Use the user's latest message as the search query
+      const lastUser = [...filtered].reverse().find(m => m.role === 'user');
+
+      if (!env.TAVILY_API_KEY) {
+        console.error('TAVILY_API_KEY is not set in environment');
+      } else if (lastUser && lastUser.content) {
+        try {
+          const searchRes = await fetch('https://api.tavily.com/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${env.TAVILY_API_KEY}`
+            },
+            body: JSON.stringify({
+              query: lastUser.content,
+              search_depth: 'basic',
+              max_results: 5
+            })
+          });
+
+          if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            if (searchData.results && searchData.results.length > 0) {
+              const resultsText = searchData.results.map((r, i) => {
+                const title = r.title || 'Untitled';
+                const url = r.url || '';
+                const content = r.content || '';
+                return `[${i + 1}] ${title}\nURL: ${url}\n${content}`;
+              }).join('\n\n');
+
+              searchContext = `\n\n--- WEB SEARCH RESULTS ---\nThe user has web search enabled. Use the following fresh results to answer their question accurately. Cite sources when relevant. If the results don't contain what's needed, say so instead of guessing.\n\n${resultsText}\n--- END SEARCH RESULTS ---`;
+            } else {
+              searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search was performed but returned no results. Answer from your own knowledge, and if you're unsure, say so.)\n--- END SEARCH RESULTS ---`;
+            }
+          } else {
+            const errText = await searchRes.text();
+            console.error('Tavily error:', searchRes.status, errText);
+            searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search failed with status ${searchRes.status}. Answer from your own knowledge.)\n--- END SEARCH RESULTS ---`;
+          }
+        } catch (e) {
+          console.error('Tavily exception:', e.message);
+          searchContext = `\n\n--- WEB SEARCH RESULTS ---\n(Web search encountered an error: ${e.message}. Answer from your own knowledge.)\n--- END SEARCH RESULTS ---`;
         }
       }
-    }] : undefined;
+    }
 
     const fullMessages = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: systemPrompt + searchContext },
       ...filtered
     ];
 
-    let response = await fetch('https://api.xkiro.com/v1/chat/completions', {
+    const response = await fetch('https://api.xkiro.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,68 +105,19 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
       },
       body: JSON.stringify({
         model: 'qwen/qwen3.6-27b:free',
-        messages: fullMessages,
-        tools: tools,
-        tool_choice: webSearchEnabled ? "auto" : undefined
+        messages: fullMessages
       })
     });
 
-    let data = await response.json();
-
-    // Check if the AI decided to use the web_search tool
-    if (data.choices && data.choices[0].message.tool_calls) {
-      const toolCall = data.choices[0].message.tool_calls[0];
-      
-      if (toolCall.function.name === "web_search") {
-        const searchQuery = JSON.parse(toolCall.function.arguments).query;
-        
-        // Call the Tavily Search API
-        const searchResponse = await fetch('https://api.tavily.com/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${env.TAVILY_API_KEY}`
-          },
-          body: JSON.stringify({
-            query: searchQuery,
-            search_depth: "basic",
-            max_results: 5
-          })
-        });
-        
-        const searchData = await searchResponse.json();
-        const searchResults = searchData.results.map(r => `- ${r.title}: ${r.content}`).join('\n');
-
-        // Add the tool call and its result to the conversation history
-        const toolMessage = {
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: searchResults || "No results found."
-        };
-
-        const followUpMessages = [
-          ...fullMessages,
-          data.choices[0].message,
-          toolMessage
-        ];
-
-        // Ask the AI for the final answer, now that it has search results
-        response = await fetch('https://api.xkiro.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${env.XKIRO_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'qwen/qwen3.6-27b:free',
-            messages: followUpMessages
-          })
-        });
-        data = await response.json();
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      return new Response(
+        JSON.stringify({ error: `Xkiro API error: ${response.status} ${errorText}` }),
+        { status: response.status, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Send the final response back to the frontend
+    const data = await response.json();
     return new Response(JSON.stringify(data), {
       headers: { 'Content-Type': 'application/json' }
     });
