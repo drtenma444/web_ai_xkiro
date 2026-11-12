@@ -106,7 +106,7 @@ Keep answers clear and useful. Don't pad them with filler. If a short answer wor
         'Authorization': `Bearer ${env.XKIRO_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.6-27b:free',
+        model: 'mistralai/mistral-medium-3.5',
         messages: fullMessages,
         stream: true
       })
