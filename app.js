@@ -198,12 +198,13 @@ function enhanceCodeBlocks(container) {
 
 // ---------- Message rendering ----------
 function addMessage(role, text, opts = {}) {
+  const isAi = role === 'ai' || role === 'assistant';
   const wrap = document.createElement('div');
-  wrap.className = `msg ${role}`;
+  wrap.className = `msg ${isAi ? 'ai' : 'user'}`;
 
   const content = document.createElement('div');
   content.className = 'msg-content';
-  if (role === 'ai') {
+  if (isAi) {
     content.innerHTML = renderMarkdown(text);
   } else {
     content.textContent = text;
@@ -216,7 +217,7 @@ function addMessage(role, text, opts = {}) {
   wrap.appendChild(actions);
 
   messagesDiv.appendChild(wrap);
-  if (role === 'ai') enhanceCodeBlocks(wrap);
+  if (isAi) enhanceCodeBlocks(wrap);
   if (opts.animate !== false) scrollToBottom(true);
   return wrap;
 }
